@@ -37,7 +37,7 @@
         const obj = JSON.parse(xhr.response);
         if(obj.users){
           h1.textContent = 'Success';
-          p.textContent = obj.users;
+          p.textContent = xhr.response;
         }
         else{
           h1.textContent = `${obj.id}`;
