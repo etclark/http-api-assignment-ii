@@ -6,6 +6,122 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script type="text/babel">
+    const parseJSON = (xhr, content) => {
+      const obj = JSON.parse(xhr.response);
+      console.dir(obj);
+
+      if(obj.message){
+        content.innerHTML += `<p>${obj.message}</p>`;
+      }
+    };
+
+    const handleResponse = (xhr, method) => {
+      const type = xhr.getResponseHeader('content-type');
+      const content = document.querySelector('#content');
+      content.innerHTML = '';
+      const h1 = document.createElement('h1');
+      const p = document.createElement('p');
+
+      //Check 204 Status
+      if(xhr.status === 204){
+        h1.textContent = 'Updated (No Content)';
+        content.appendChild(h1);
+        return;
+      }
+
+      if(type === 'application/json'){
+        if(method === 'HEAD'){
+          handleHead(xhr.status);
+          return;
+        }
+        const obj = JSON.parse(xhr.response);
+        if(obj.users){
+          h1.textContent = 'Success';
+          p.textContent = obj.users;
+        }
+        else{
+          h1.textContent = `${obj.id}`;
+          p.textContent = `Message: ${obj.message}`;
+        }
+        console.log(obj);
+        content.appendChild(h1);
+        content.appendChild(p);
+      }
+      else{
+        //console.log(xhr.response);
+        content.innerHTML = xhr.response;
+      }
+    };
+
+    const handleHead = (status) => {
+      const content = document.querySelector('#content');
+      switch (status) {
+        case 200:
+          content.innerHTML = '<h1>Success</h1>';
+          break;
+        case 201:
+          content.innerHTML = '<h1>Created</h1>';
+          break;
+        case 204:
+          content.innerHTML = '<h1>Updated (No Content)</h1>';
+          break;
+        case 400:
+          content.innerHTML = '<h1>Bad Request</h1>';
+          break;
+        default:
+          content.innerHTML = '<h1>Resource Not Found</h1>';
+          break;
+      }
+    }
+
+    const sendGet = (e, userForm, acceptedType) => {
+      const urlField = userForm.querySelector('#urlField');
+      const methodSelect = userForm.querySelector('#methodSelect');
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.open(methodSelect.value, urlField.value);
+      xhr.setRequestHeader('Accept', acceptedType);
+      xhr.onload = () => handleResponse(xhr, methodSelect.value);
+      xhr.send();
+      e.preventDefault();
+      return false;
+    };
+
+    const sendPost = (e, nameForm) =>{
+      const nameAction = nameForm.getAttribute('action');
+      const nameMethod = nameForm.getAttribute('method');
+      const nameField = nameForm.querySelector('#nameField');
+      const ageField = nameForm.querySelector('#ageField');
+
+      const xhr = new XMLHttpRequest();
+      xhr.open(nameMethod, nameAction);
+
+      xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xhr.setRequestHeader('Accept', 'application/json');
+
+      xhr.onload = () => handleResponse(xhr, nameMethod);
+
+      const formData = `name=${nameField.value}&age=${ageField.value}`;
+
+      xhr.send(formData);
+      e.preventDefault();
+      return false;
+    }
+
+    const init = () => {
+      const urlSelect = document.querySelector('#urlField');
+      const methodSelect = document.querySelector('#methodSelect');
+      const nameForm = document.querySelector('#nameForm');
+      const userForm = document.querySelector('#userForm');
+
+      const getUsers = (e) => sendGet(e, userForm, 'application/json');
+      const addUser = (e) => sendPost(e, nameForm); 
+      userForm.addEventListener('submit', getUsers);
+      nameForm.addEventListener('submit', addUser);
+    };
+
+    window.onload = init;
 
   </script>
 </head>
@@ -25,8 +141,8 @@
         <option value='/notReal'>/notReal</option>
       </select>
       <select id="methodSelect">
-        <option value="get">GET</option>
-        <option value="head">HEAD</option>
+        <option value="GET">GET</option>
+        <option value="HEAD">HEAD</option>
       </select>
       <input type="submit" value="Get User" />
     </form>
